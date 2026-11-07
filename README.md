@@ -10,6 +10,31 @@ Overlay « morceau en cours » pour **OBS**, simple et entièrement personnalisa
 
 > Windows 10 / 11 uniquement. Fonctionne avec Spotify, les navigateurs, VLC, foobar2000, Apple Music et la plupart des lecteurs.
 
+## Technologies utilisées
+
+| Couche | Technologie | Rôle |
+|---|---|---|
+| Lecture du morceau | **Python 3.12** + [`winsdk`](https://github.com/pywinrt/python-winsdk) | Lit le « contrôle global de lecture » de Windows (SMTC) : titre, artiste, album, état, position, durée, pochette |
+| Serveur local | `http.server` (bibliothèque standard) | Sert l'interface, l'overlay et une petite API JSON sur `127.0.0.1:8765` |
+| Boucle de lecture | `asyncio` dans un thread dédié | Interroge Windows une fois par seconde |
+| Interface de réglages | **React 18** + **Vite 5** | Panneau de configuration avec aperçu en direct |
+| Overlay OBS | HTML / CSS / JavaScript natifs | Page affichée par la source Navigateur d'OBS |
+| Fenêtres | [`pywebview`](https://pywebview.flowrl.com) (WebView2) | Fenêtre de réglages et écran de démarrage |
+| Zone de notification | [`pystray`](https://github.com/moses-palmer/pystray) + `Pillow` | Icône, menu clic droit, notifications |
+| Liste des polices | `ctypes` + GDI (`EnumFontFamiliesExW`) | Énumère les polices réellement installées |
+| Raccourci clavier global | `RegisterHotKey` (user32) | Fonctionne même quand Orbito est réduit ou qu'un jeu a le focus |
+| Démarrage avec Windows | `winreg` | Active ou désactive le lancement automatique |
+| Mises à jour | API GitHub Releases | Détecte et installe la dernière version |
+| Distribution | **PyInstaller** (`--onefile`) | Un unique `Orbito.exe`, interface embarquée |
+
+### Pourquoi pas l'API Spotify ?
+
+Windows expose à toutes les applications multimédia un « contrôle global de lecture » (celui des touches média et du volet de volume). Spotify, mais aussi les navigateurs, VLC, foobar2000 ou Apple Music y publient le morceau en cours. Orbito se branche dessus : ça fonctionne hors ligne, sans authentification, sans quota et avec n'importe quel lecteur compatible. Si Spotify est présent il est prioritaire, sinon Orbito suit la session de lecture active de Windows.
+
+### Comment fonctionne l'overlay
+
+L'interface enregistre la configuration, l'overlay la relit chaque seconde et se met à jour tout seul : aucun WebSocket. Les réglages sont appliqués par JavaScript sur des styles et variables CSS, la progression est interpolée entre deux relevés Windows pour rester fluide, et la rotation de la pochette est une animation CSS que l'on met seulement en pause (elle garde son angle). Le serveur n'écoute que sur `127.0.0.1` : rien n'est exposé sur le réseau.
+
 ## Démarrage
 
 1. Lance `Orbito.exe`. Un écran de démarrage s'affiche, puis la fenêtre de réglages s'ouvre.
